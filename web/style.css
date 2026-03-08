@@ -29,6 +29,7 @@ body {
 #groups {
   display: grid;
   grid-template-columns: repeat(12, minmax(80px, 1fr));
+  grid-auto-rows: minmax(140px, auto);
   gap: 16px;
   align-items: start;
 }
@@ -52,16 +53,26 @@ body {
   cursor: col-resize;
   border-radius: 0 var(--radius) var(--radius) 0;
   transition: background 0.15s;
+  z-index: 1;
 }
 
-body.editing .resize-handle {
-  display: block;
+body.editing .resize-handle { display: block; }
+.resize-handle:hover, .resize-handle.active { background: var(--accent); opacity: 0.5; }
+
+.resize-handle-v {
+  display: none;
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 8px;
+  cursor: row-resize;
+  border-radius: 0 0 var(--radius) var(--radius);
+  transition: background 0.15s;
 }
 
-.resize-handle:hover, .resize-handle.active {
-  background: var(--accent);
-  opacity: 0.5;
-}
+body.editing .resize-handle-v { display: block; }
+.resize-handle-v:hover, .resize-handle-v.active { background: var(--accent); opacity: 0.5; }
 
 .group-header {
   display: flex;

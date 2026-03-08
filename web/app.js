@@ -8,8 +8,11 @@ const COLS = 12;
 
 function groupCells(g) {
   const w = g.w || 1;
+  const h = g.h || 1;
   const cells = [];
-  for (let dx = 0; dx < w; dx++) cells.push(`${g.x + dx},${g.y}`);
+  for (let dy = 0; dy < h; dy++)
+    for (let dx = 0; dx < w; dx++)
+      cells.push(`${g.x + dx},${g.y + dy}`);
   return cells;
 }
 
@@ -25,6 +28,7 @@ function assignMissingPositions() {
   const occupied = new Set();
   state.groups.forEach((g, i) => {
     if (!g.w) g.w = 1;
+    if (!g.h) g.h = 1;
     const mine = groupCells(g);
     const conflict = g.x == null || g.y == null || mine.some(c => occupied.has(c));
     if (conflict) {
@@ -137,7 +141,7 @@ function render() {
     el.className = 'group' + (group.collapsed ? ' group--collapsed' : '');
     el.dataset.gi = gi;
     el.style.gridColumn = `${group.x + 1} / span ${group.w || 1}`;
-    el.style.gridRow = group.y + 1;
+    el.style.gridRow = `${group.y + 1} / span ${group.h || 1}`;
     if (group.color) el.style.background = group.color;
 
     // Header
@@ -229,7 +233,7 @@ function render() {
     btnAddLink.onclick = () => openLinkModal(gi, null);
     el.appendChild(btnAddLink);
 
-    // Resize handle
+    // Horizontal resize handle (right edge)
     const resizeHandle = document.createElement('div');
     resizeHandle.className = 'resize-handle';
     resizeHandle.addEventListener('mousedown', (e) => {
@@ -237,6 +241,15 @@ function render() {
       if (document.body.classList.contains('editing')) startResize(gi, e);
     });
     el.appendChild(resizeHandle);
+
+    // Vertical resize handle (bottom edge)
+    const resizeHandleV = document.createElement('div');
+    resizeHandleV.className = 'resize-handle-v';
+    resizeHandleV.addEventListener('mousedown', (e) => {
+      e.stopPropagation();
+      if (document.body.classList.contains('editing')) startResizeV(gi, e);
+    });
+    el.appendChild(resizeHandleV);
 
     container.appendChild(el);
   });
@@ -329,10 +342,11 @@ document.addEventListener('mousemove', (e) => {
 
   const occupied = occupiedCells(drag.gi);
   const dragW = state.groups[drag.gi].w || 1;
+  const dragH = state.groups[drag.gi].h || 1;
   let blocked = false;
-  for (let dx = 0; dx < dragW; dx++) {
-    if (occupied.has(`${cell.x + dx},${cell.y}`)) { blocked = true; break; }
-  }
+  outer: for (let dy = 0; dy < dragH; dy++)
+    for (let dx = 0; dx < dragW; dx++)
+      if (occupied.has(`${cell.x + dx},${cell.y + dy}`)) { blocked = true; break outer; }
   ghost.classList.toggle('blocked', blocked);
 });
 
@@ -348,10 +362,11 @@ document.addEventListener('mouseup', async (e) => {
   const group = state.groups[drag.gi];
   const occupied = occupiedCells(drag.gi);
   const dragW = group.w || 1;
+  const dragH = group.h || 1;
   let blocked = false;
-  for (let dx = 0; dx < dragW; dx++) {
-    if (occupied.has(`${drag.targetX + dx},${drag.targetY}`)) { blocked = true; break; }
-  }
+  outer: for (let dy = 0; dy < dragH; dy++)
+    for (let dx = 0; dx < dragW; dx++)
+      if (occupied.has(`${drag.targetX + dx},${drag.targetY + dy}`)) { blocked = true; break outer; }
   if (!blocked && (drag.targetX !== group.x || drag.targetY !== group.y)) {
     group.x = drag.targetX;
     group.y = drag.targetY;
@@ -386,19 +401,12 @@ document.addEventListener('mousemove', (e) => {
   // Clamp to grid boundary
   newW = Math.min(newW, COLS - group.x);
 
-  // Clamp to nearest group to the right at same row
-  state.groups.forEach((g, i) => {
-    if (i === resize.gi) return;
-    if (g.y === group.y && g.x >= group.x + 1) {
-      newW = Math.min(newW, g.x - group.x);
-    }
-    // Also check if spanning group occupies cells in our row
-    for (let dx = 0; dx < (g.w || 1); dx++) {
-      if (g.y === group.y && g.x + dx >= group.x + 1) {
-        newW = Math.min(newW, g.x + dx - group.x);
-      }
-    }
-  });
+  // Clamp to avoid overlapping other groups (accounts for H>1)
+  const occupiedH = occupiedCells(resize.gi);
+  for (let dy = 0; dy < (group.h || 1); dy++)
+    for (let dx = 1; dx < newW; dx++)
+      if (occupiedH.has(`${group.x + dx},${group.y + dy}`))
+        newW = Math.min(newW, dx);
   newW = Math.max(1, newW);
 
   resize.newW = newW;
@@ -417,6 +425,54 @@ document.addEventListener('mouseup', async () => {
     render();
   }
   resize = null;
+});
+
+// ── Vertical resize logic ───────────────────────────────────────────────────
+
+let resizeV = null;
+
+function startResizeV(gi, e) {
+  e.preventDefault();
+  document.body.style.userSelect = 'none';
+  const handle = e.currentTarget;
+  handle.classList.add('active');
+  const el = document.querySelector(`.group[data-gi="${gi}"]`);
+  const currentH = state.groups[gi].h || 1;
+  // Estimate row height from the rendered element
+  const rowH = el.getBoundingClientRect().height / currentH;
+  resizeV = { gi, handle, startY: e.clientY, startH: currentH, rowH, newH: currentH };
+}
+
+document.addEventListener('mousemove', (e) => {
+  if (!resizeV) return;
+  const group = state.groups[resizeV.gi];
+  const deltaY = e.clientY - resizeV.startY;
+  let newH = Math.max(1, Math.round(resizeV.startH + deltaY / resizeV.rowH));
+
+  // Clamp to avoid overlapping other groups
+  const occupied = occupiedCells(resizeV.gi);
+  for (let dy = 0; dy < newH; dy++)
+    for (let dx = 0; dx < (group.w || 1); dx++)
+      if (occupied.has(`${group.x + dx},${group.y + dy}`))
+        newH = Math.min(newH, dy);
+  newH = Math.max(1, newH);
+
+  resizeV.newH = newH;
+  const el = document.querySelector(`.group[data-gi="${resizeV.gi}"]`);
+  if (el) el.style.gridRow = `${group.y + 1} / span ${newH}`;
+});
+
+document.addEventListener('mouseup', async () => {
+  if (!resizeV) return;
+  resizeV.handle.classList.remove('active');
+  document.body.style.userSelect = '';
+  const group = state.groups[resizeV.gi];
+  if (resizeV.newH !== (group.h || 1)) {
+    group.h = resizeV.newH;
+    await saveConfig();
+    render();
+  }
+  resizeV = null;
 });
 
 // ── Edit mode ──────────────────────────────────────────────────────────────
