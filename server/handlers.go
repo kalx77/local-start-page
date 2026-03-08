@@ -1,7 +1,6 @@
 package server
 
 import (
-	"embed"
 	"encoding/json"
 	"io"
 	"io/fs"
@@ -13,17 +12,13 @@ import (
 	"github.com/kuzmin/local-start-page/config"
 )
 
-func registerHandlers(mux *http.ServeMux, configPath string, webFS embed.FS) {
-	sub, err := fs.Sub(webFS, "web")
-	if err != nil {
-		panic(err)
-	}
-	fileServer := http.FileServer(http.FS(sub))
+func registerHandlers(mux *http.ServeMux, configPath string, webFS fs.FS) {
+	fileServer := http.FileServer(http.FS(webFS))
 
 	// Serve index.html at root, delegate everything else to the file server
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path == "/" {
-			http.ServeFileFS(w, r, sub, "index.html")
+			http.ServeFileFS(w, r, webFS, "index.html")
 			return
 		}
 		fileServer.ServeHTTP(w, r)
