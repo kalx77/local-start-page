@@ -174,6 +174,48 @@ func TestServeIndex(t *testing.T) {
 	}
 }
 
+func TestPostConfig_LinkOrderPreserved(t *testing.T) {
+	cfgPath := saveTestConfig(t, &config.Config{})
+	mux := newTestMux(t, cfgPath)
+
+	// POST with links in specific order
+	ordered := config.Config{
+		Groups: []config.Group{{
+			Name: "G", X: 0, Y: 0, W: 1, H: 1,
+			Links: []config.Link{
+				{Name: "B", URL: "https://b.example.com"},
+				{Name: "A", URL: "https://a.example.com"},
+				{Name: "C", URL: "https://c.example.com"},
+			},
+		}},
+	}
+	body, _ := json.Marshal(ordered)
+	req := httptest.NewRequest(http.MethodPost, "/api/config", bytes.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	w := httptest.NewRecorder()
+	mux.ServeHTTP(w, req)
+	if w.Code != http.StatusNoContent {
+		t.Fatalf("POST status: got %d, want 204", w.Code)
+	}
+
+	// GET and verify same order
+	w2 := httptest.NewRecorder()
+	mux.ServeHTTP(w2, httptest.NewRequest(http.MethodGet, "/api/config", nil))
+	var got config.Config
+	if err := json.NewDecoder(w2.Body).Decode(&got); err != nil {
+		t.Fatalf("decode: %v", err)
+	}
+	want := []string{"B", "A", "C"}
+	if len(got.Groups[0].Links) != 3 {
+		t.Fatalf("links len: got %d, want 3", len(got.Groups[0].Links))
+	}
+	for i, name := range want {
+		if got.Groups[0].Links[i].Name != name {
+			t.Errorf("link[%d]: got %q, want %q", i, got.Groups[0].Links[i].Name, name)
+		}
+	}
+}
+
 func TestServeStaticFile(t *testing.T) {
 	cfgPath := saveTestConfig(t, &config.Config{})
 	mux := newTestMux(t, cfgPath)

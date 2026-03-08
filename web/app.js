@@ -208,6 +208,22 @@ function render() {
       const rowBtns = document.createElement('div');
       rowBtns.className = 'edit-btns';
 
+      const btnUp = document.createElement('button');
+      btnUp.className = 'btn-icon';
+      btnUp.textContent = '▲';
+      btnUp.title = 'Move up';
+      btnUp.disabled = li === 0;
+      btnUp.onclick = () => moveLink(gi, li, -1);
+      rowBtns.appendChild(btnUp);
+
+      const btnDown = document.createElement('button');
+      btnDown.className = 'btn-icon';
+      btnDown.textContent = '▼';
+      btnDown.title = 'Move down';
+      btnDown.disabled = li === (group.links || []).length - 1;
+      btnDown.onclick = () => moveLink(gi, li, +1);
+      rowBtns.appendChild(btnDown);
+
       const btnEdit = document.createElement('button');
       btnEdit.className = 'btn-icon';
       btnEdit.textContent = 'edit';
@@ -254,11 +270,6 @@ function render() {
     container.appendChild(el);
   });
 
-  // Add group row visibility
-  document.getElementById('add-group-row').classList.toggle(
-    'hidden',
-    !document.body.classList.contains('editing')
-  );
 }
 
 // ── Drag logic ─────────────────────────────────────────────────────────────
@@ -481,7 +492,7 @@ document.getElementById('btn-edit').addEventListener('click', () => {
   document.body.classList.toggle('editing');
   const editing = document.body.classList.contains('editing');
   document.getElementById('btn-bg').classList.toggle('hidden', !editing);
-  document.getElementById('add-group-row').classList.toggle('hidden', !editing);
+  document.getElementById('btn-add-group').classList.toggle('hidden', !editing);
 });
 
 // ── Delete helpers ─────────────────────────────────────────────────────────
@@ -494,6 +505,15 @@ async function deleteGroup(gi) {
 
 async function deleteLink(gi, li) {
   state.groups[gi].links.splice(li, 1);
+  await saveConfig();
+  render();
+}
+
+async function moveLink(gi, li, dir) {
+  const links = state.groups[gi].links;
+  const target = li + dir;
+  if (target < 0 || target >= links.length) return;
+  [links[li], links[target]] = [links[target], links[li]];
   await saveConfig();
   render();
 }
