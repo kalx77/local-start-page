@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Start Page</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div id="app">
+    <div id="groups"></div>
+    <div id="add-group-row" class="hidden">
+      <button id="btn-add-group" class="btn-secondary">+ Group</button>
+    </div>
+  </div>
+
+  <div id="toolbar">
+    <button id="btn-bg" class="hidden" title="Background color">BG</button>
+    <button id="btn-edit">Edit</button>
+  </div>
+
+  <!-- Link modal -->
+  <div id="modal-link" class="modal hidden">
+    <div class="modal-box">
+      <h3 id="modal-link-title">Link</h3>
+      <label>Name<input id="link-name" type="text" placeholder="GitHub"></label>
+      <label>URL<input id="link-url" type="url" placeholder="https://..."></label>
+      <label>Icon<input id="link-icon" type="text" placeholder="emoji or leave empty"></label>
+      <div class="modal-actions">
+        <button id="modal-link-cancel" class="btn-secondary">Cancel</button>
+        <button id="modal-link-save" class="btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Group rename modal -->
+  <div id="modal-group" class="modal hidden">
+    <div class="modal-box">
+      <h3>Rename Group</h3>
+      <label>Name<input id="group-name" type="text"></label>
+      <div class="modal-actions">
+        <button id="modal-group-cancel" class="btn-secondary">Cancel</button>
+        <button id="modal-group-save" class="btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Background modal -->
+  <div id="modal-bg" class="modal hidden">
+    <div class="modal-box">
+      <h3>Background</h3>
+      <label>Color / CSS value
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="bg-color-picker" type="color">
+          <input id="bg-value" type="text" placeholder="#0f0f1a or url(...)">
+        </div>
+      </label>
+      <label>Image
+        <input id="bg-file" type="file" accept="image/jpeg,image/png,image/gif,image/webp">
+      </label>
+      <div class="modal-actions">
+        <button id="modal-bg-cancel" class="btn-secondary">Cancel</button>
+        <button id="modal-bg-save" class="btn-primary">Save</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

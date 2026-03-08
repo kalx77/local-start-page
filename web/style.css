@@ -1,0 +1,338 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #0f0f1a;
+  --surface: #1a1a2e;
+  --border: #2a2a3e;
+  --text: #e0e0f0;
+  --muted: #888;
+  --accent: #7c6af7;
+  --danger: #e05c5c;
+  --radius: 8px;
+  --font: system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  padding: 40px 24px 80px;
+}
+
+#app {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+/* Groups grid */
+#groups {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(80px, 1fr));
+  gap: 16px;
+  align-items: start;
+}
+
+.group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 16px;
+  min-width: 0;
+  position: relative;
+}
+
+.resize-handle {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: col-resize;
+  border-radius: 0 var(--radius) var(--radius) 0;
+  transition: background 0.15s;
+}
+
+body.editing .resize-handle {
+  display: block;
+}
+
+.resize-handle:hover, .resize-handle.active {
+  background: var(--accent);
+  opacity: 0.5;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.group-title {
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  flex: 1;
+  min-width: 0;
+  word-break: break-word;
+}
+
+/* Links */
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.link-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.link-anchor {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 8px;
+  border-radius: calc(var(--radius) - 2px);
+  text-decoration: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  flex: 1;
+  min-width: 0;
+  transition: background 0.15s;
+}
+
+.link-anchor span {
+  word-break: break-word;
+}
+
+.link-anchor:hover {
+  background: var(--border);
+}
+
+.link-anchor .icon {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  font-size: 16px;
+}
+
+.link-anchor img.icon {
+  width: 20px;
+  height: 20px;
+  border-radius: 3px;
+  object-fit: contain;
+}
+
+/* Edit controls */
+.edit-btns {
+  display: none;
+  gap: 4px;
+}
+
+body.editing .edit-btns {
+  display: flex;
+}
+
+body.editing .link-anchor {
+  pointer-events: none;
+}
+
+.btn-icon {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  color: var(--muted);
+  cursor: pointer;
+  padding: 2px 6px;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  transition: color 0.15s, border-color 0.15s;
+  white-space: nowrap;
+}
+
+.btn-icon:hover { color: var(--text); border-color: var(--muted); }
+.btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); }
+
+#add-group-row {
+  margin-top: 24px;
+  width: 100%;
+}
+
+/* Drag */
+.group.dragging { opacity: 0; pointer-events: none; }
+body.editing .group-header { cursor: grab; }
+body.editing .group-header:active { cursor: grabbing; }
+#drag-ghost {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  opacity: 0.8;
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+}
+#drag-ghost.blocked { border-color: var(--danger); }
+
+/* Toolbar */
+#toolbar {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  display: flex;
+  gap: 8px;
+}
+
+/* Buttons */
+.btn-primary, .btn-secondary {
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  font-family: var(--font);
+  transition: opacity 0.15s;
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.btn-primary:hover, .btn-secondary:hover { opacity: 0.85; }
+
+#btn-edit {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  font-family: var(--font);
+  transition: background 0.15s;
+}
+
+#btn-edit:hover { background: var(--border); }
+
+body.editing #btn-edit {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+#btn-bg {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  font-family: var(--font);
+}
+
+#btn-bg:hover { background: var(--border); }
+
+/* Modals */
+.modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+}
+
+.modal.hidden { display: none; }
+
+.modal-box {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) * 1.5);
+  padding: 24px;
+  width: 360px;
+  max-width: 95vw;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.modal-box h3 {
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.modal-box label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.modal-box input[type="text"],
+.modal-box input[type="url"] {
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  color: var(--text);
+  font-family: var(--font);
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  width: 100%;
+}
+
+.modal-box input[type="text"]:focus,
+.modal-box input[type="url"]:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.modal-box input[type="color"] {
+  width: 40px;
+  height: 34px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg);
+  cursor: pointer;
+  padding: 2px;
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.hidden { display: none !important; }
+
+/* add-link button in edit mode */
+.btn-add-link {
+  margin-top: 8px;
+  width: 100%;
+  text-align: left;
+  font-size: 0.8rem;
+  padding: 4px 8px;
+  display: none;
+}
+
+body.editing .btn-add-link {
+  display: block;
+}
