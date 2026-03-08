@@ -4,11 +4,11 @@ A lightweight personal start page that runs locally. Organize links into draggab
 
 ## Features
 
-- **Link groups** — draggable, horizontally resizable, with custom background color per group
-- **Links** — favicon auto-fetch, emoji or custom icon URL support
+- **Link groups** — draggable, horizontally and vertically resizable (multi-row), collapsible, with custom background color per group
+- **Links** — favicon auto-fetch, emoji or custom icon URL support, reorderable up/down within a group
 - **Background** — solid color, CSS value, or uploaded image
-- **Edit mode** — toggle with the Edit button; drag groups, resize them, add/rename/delete links
-- **Service mode** — install as a system service (launchd / systemd / Task Scheduler)
+- **Edit mode** — toggle with the Edit button; drag groups, resize them horizontally and vertically, collapse/expand, add/rename/delete/reorder links
+- **Service mode** — install as a system service (launchd / systemd / Task Scheduler); re-running `--install` updates the binary and restarts the service automatically
 
 ## Quick start
 
@@ -27,7 +27,7 @@ go build -o start-page .
 | `--daemon` | — | Run server in the background (PID → `/tmp/local-start-page.pid`) |
 | `--stop` | — | Stop background daemon |
 | `--status` | — | Show daemon status |
-| `--install` | — | Install as system service |
+| `--install` | — | Install as system service (or update existing installation) |
 | `--uninstall` | — | Remove system service |
 
 ## Install as a service
@@ -35,10 +35,12 @@ go build -o start-page .
 The `--install` command copies the binary to a user-level location and registers it with the native service manager. No root or administrator privileges required.
 
 ```bash
-./start-page --install              # uses port from config.toml (default 1221)
-./start-page --install --port 8080  # install with a specific port
+./start-page --install              # fresh install or update existing
+./start-page --install --port 8080  # install/update with a specific port
 ./start-page --uninstall            # remove the service
 ```
+
+**Update behaviour:** if a previous installation is detected, `--install` stops the running service, replaces the binary, and restarts the service automatically. Config is never touched during an update.
 
 ### macOS — launchd LaunchAgent
 
@@ -111,6 +113,8 @@ port = 1221
 [[group]]
 name = "Dev"
 color = ""          # optional CSS color, e.g. "#1a2a1a"
+collapsed = false   # collapse group to header-only
+h = 1               # row span (vertical size)
 
   [[group.link]]
   name = "GitHub"
@@ -118,15 +122,36 @@ color = ""          # optional CSS color, e.g. "#1a2a1a"
   icon = ""         # emoji, https://… URL, or empty (auto favicon)
 ```
 
-### Group background color
+## Edit mode
 
-Each group can have an independent background color. Click **Edit → rename** on any group to open the group editor and pick a color. Leave the field empty to use the default surface color.
+Click **Edit** in the bottom-right toolbar to enter edit mode. Available actions:
+
+| Action | How |
+|--------|-----|
+| Move group | Drag the group header |
+| Resize horizontally | Drag the right edge handle |
+| Resize vertically | Drag the bottom edge handle |
+| Collapse / expand | Click **▾/▸** or anywhere on the header |
+| Edit group (name, color) | Click **rename** in the group header |
+| Delete group | Click **del** in the group header |
+| Add link | Click **+ Link** inside a group |
+| Edit link | Click **edit** next to a link |
+| Reorder links | Click **▲** / **▼** next to a link |
+| Delete link | Click **del** next to a link |
+| Add group | Click **+ Group** in the toolbar |
+| Change background | Click **BG** in the toolbar |
 
 ## Building
 
 ```bash
-go build -o start-page .     # current platform
+go build -o start-page .        # current platform
 GOOS=linux  go build -o start-page-linux .
 GOOS=darwin go build -o start-page-darwin .
 GOOS=windows go build -o start-page.exe .
+```
+
+## Testing
+
+```bash
+go test ./...
 ```
