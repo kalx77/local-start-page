@@ -20,6 +20,7 @@ type Group struct {
 	X         int    `toml:"x"         json:"x"`
 	Y         int    `toml:"y"         json:"y"`
 	W         int    `toml:"w"         json:"w"`
+	H         int    `toml:"h"         json:"h"`
 }
 
 type Link struct {
