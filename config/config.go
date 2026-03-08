@@ -13,12 +13,13 @@ type Config struct {
 }
 
 type Group struct {
-	Name  string `toml:"name"  json:"name"`
-	Color string `toml:"color" json:"color"`
-	Links []Link `toml:"link"  json:"links"`
-	X     int    `toml:"x"     json:"x"`
-	Y     int    `toml:"y"     json:"y"`
-	W     int    `toml:"w"     json:"w"`
+	Name      string `toml:"name"      json:"name"`
+	Color     string `toml:"color"     json:"color"`
+	Collapsed bool   `toml:"collapsed" json:"collapsed"`
+	Links     []Link `toml:"link"      json:"links"`
+	X         int    `toml:"x"         json:"x"`
+	Y         int    `toml:"y"         json:"y"`
+	W         int    `toml:"w"         json:"w"`
 }
 
 type Link struct {
