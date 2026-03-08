@@ -138,6 +138,7 @@ function render() {
     el.dataset.gi = gi;
     el.style.gridColumn = `${group.x + 1} / span ${group.w || 1}`;
     el.style.gridRow = group.y + 1;
+    if (group.color) el.style.background = group.color;
 
     // Header
     const header = document.createElement('div');
@@ -490,7 +491,13 @@ let groupModalCtx = null;
 
 function openGroupModal(gi) {
   groupModalCtx = gi;
-  document.getElementById('group-name').value = state.groups[gi].name;
+  const group = state.groups[gi];
+  document.getElementById('group-name').value = group.name;
+  const color = group.color || '';
+  document.getElementById('group-color-value').value = color;
+  if (/^#[0-9a-fA-F]{6}$/.test(color)) {
+    document.getElementById('group-color-picker').value = color;
+  }
   document.getElementById('modal-group').classList.remove('hidden');
   document.getElementById('group-name').focus();
 }
@@ -503,9 +510,18 @@ document.getElementById('modal-group-save').addEventListener('click', async () =
   const name = document.getElementById('group-name').value.trim();
   if (!name) return;
   state.groups[groupModalCtx].name = name;
+  state.groups[groupModalCtx].color = document.getElementById('group-color-value').value.trim();
   document.getElementById('modal-group').classList.add('hidden');
   await saveConfig();
   render();
+});
+
+document.getElementById('group-color-picker').addEventListener('input', (e) => {
+  document.getElementById('group-color-value').value = e.target.value;
+});
+
+document.getElementById('group-color-clear').addEventListener('click', () => {
+  document.getElementById('group-color-value').value = '';
 });
 
 // ── Background modal ───────────────────────────────────────────────────────
