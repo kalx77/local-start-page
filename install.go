@@ -20,6 +20,12 @@ func installService(port int, configPath string) {
 		die("cannot prepare service config: %v", err)
 	}
 
+	updating := isServiceInstalled()
+	if updating {
+		fmt.Println("Existing installation found — stopping service before update...")
+		stopServiceForUpdate()
+	}
+
 	for _, dir := range []string{filepath.Dir(sc.BinPath), filepath.Dir(sc.ConfigPath), filepath.Dir(sc.LogPath)} {
 		if err := os.MkdirAll(dir, 0755); err != nil {
 			die("cannot create directory %s: %v", dir, err)
@@ -32,11 +38,11 @@ func installService(port int, configPath string) {
 
 	switch runtime.GOOS {
 	case "darwin":
-		installMacOS(sc)
+		installMacOS(sc, updating)
 	case "linux":
-		installLinux(sc)
+		installLinux(sc, updating)
 	case "windows":
-		installWindows(sc)
+		installWindows(sc, updating)
 	default:
 		die("unsupported OS: %s", runtime.GOOS)
 	}
@@ -52,6 +58,33 @@ func uninstallService() {
 		uninstallWindows()
 	default:
 		die("unsupported OS: %s", runtime.GOOS)
+	}
+}
+
+// isServiceInstalled reports whether a previous installation exists.
+func isServiceInstalled() bool {
+	switch runtime.GOOS {
+	case "darwin":
+		_, err := os.Stat(plistPath())
+		return err == nil
+	case "linux":
+		_, err := os.Stat(systemdUnitPath())
+		return err == nil
+	case "windows":
+		return exec.Command("schtasks", "/query", "/tn", taskName).Run() == nil
+	}
+	return false
+}
+
+// stopServiceForUpdate stops the running service so the binary can be replaced.
+func stopServiceForUpdate() {
+	switch runtime.GOOS {
+	case "darwin":
+		exec.Command("launchctl", "unload", "-w", plistPath()).Run() //nolint:errcheck
+	case "linux":
+		exec.Command("systemctl", "--user", "stop", unitName).Run() //nolint:errcheck
+	case "windows":
+		exec.Command("schtasks", "/end", "/tn", taskName).Run() //nolint:errcheck
 	}
 }
 
@@ -168,7 +201,7 @@ func plistPath() string {
 	return filepath.Join(home, "Library", "LaunchAgents", plistLabel+".plist")
 }
 
-func installMacOS(sc svcConfig) {
+func installMacOS(sc svcConfig, updating bool) {
 	p := plistPath()
 	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
 		die("cannot create LaunchAgents dir: %v", err)
@@ -176,15 +209,21 @@ func installMacOS(sc svcConfig) {
 	if err := writeTemplate(p, plistTmpl, sc); err != nil {
 		die("cannot write plist: %v", err)
 	}
-	// Unload first in case it was already loaded.
+	// Ensure unloaded (may have been stopped already by stopServiceForUpdate).
 	exec.Command("launchctl", "unload", "-w", p).Run() //nolint:errcheck
 	if out, err := exec.Command("launchctl", "load", "-w", p).CombinedOutput(); err != nil {
 		die("launchctl load failed: %v\n%s", err, out)
 	}
-	printInstallSummary("launchd LaunchAgent", p, sc)
-	fmt.Println("  Autostart : on login")
-	fmt.Printf("  Logs      : %s\n", sc.LogPath)
-	fmt.Println("  Uninstall : local-start-page --uninstall")
+	if updating {
+		fmt.Printf("Updated and restarted (launchd)\n")
+		fmt.Printf("  Binary : %s\n", sc.BinPath)
+		fmt.Printf("  URL    : http://localhost:%d\n", sc.Port)
+	} else {
+		printInstallSummary("launchd LaunchAgent", p, sc)
+		fmt.Println("  Autostart : on login")
+		fmt.Printf("  Logs      : %s\n", sc.LogPath)
+		fmt.Println("  Uninstall : local-start-page --uninstall")
+	}
 }
 
 func uninstallMacOS() {
@@ -220,7 +259,7 @@ func systemdUnitPath() string {
 	return filepath.Join(home, ".config", "systemd", "user", unitName)
 }
 
-func installLinux(sc svcConfig) {
+func installLinux(sc svcConfig, updating bool) {
 	p := systemdUnitPath()
 	if err := os.MkdirAll(filepath.Dir(p), 0755); err != nil {
 		die("cannot create systemd user dir: %v", err)
@@ -229,11 +268,19 @@ func installLinux(sc svcConfig) {
 		die("cannot write unit file: %v", err)
 	}
 	runCmd("systemctl", "--user", "daemon-reload")
-	runCmd("systemctl", "--user", "enable", "--now", unitName)
-	printInstallSummary("systemd user service", p, sc)
-	fmt.Println("  Autostart : on login (loginctl enable-linger for headless)")
-	fmt.Printf("  Logs      : journalctl --user -u %s -f\n", unitName)
-	fmt.Println("  Uninstall : local-start-page --uninstall")
+	if updating {
+		runCmd("systemctl", "--user", "restart", unitName)
+		fmt.Printf("Updated and restarted (systemd)\n")
+		fmt.Printf("  Binary : %s\n", sc.BinPath)
+		fmt.Printf("  URL    : http://localhost:%d\n", sc.Port)
+		fmt.Printf("  Logs   : journalctl --user -u %s -f\n", unitName)
+	} else {
+		runCmd("systemctl", "--user", "enable", "--now", unitName)
+		printInstallSummary("systemd user service", p, sc)
+		fmt.Println("  Autostart : on login (loginctl enable-linger for headless)")
+		fmt.Printf("  Logs      : journalctl --user -u %s -f\n", unitName)
+		fmt.Println("  Uninstall : local-start-page --uninstall")
+	}
 }
 
 func uninstallLinux() {
@@ -249,7 +296,7 @@ func uninstallLinux() {
 
 const taskName = "local-start-page"
 
-func installWindows(sc svcConfig) {
+func installWindows(sc svcConfig, updating bool) {
 	// Quote paths that may contain spaces.
 	tr := fmt.Sprintf(`"%s" --config "%s" --port %s`, sc.BinPath, sc.ConfigPath, sc.PortStr)
 	out, err := exec.Command(
@@ -258,17 +305,22 @@ func installWindows(sc svcConfig) {
 		"/tr", tr,
 		"/sc", "ONLOGON",
 		"/rl", "HIGHEST",
-		"/f",
+		"/f", // overwrites existing task if present
 	).CombinedOutput()
 	if err != nil {
 		die("schtasks /create failed: %v\n%s", err, out)
 	}
-	// Start immediately without waiting for next login.
 	exec.Command("schtasks", "/run", "/tn", taskName).Run() //nolint:errcheck
-	printInstallSummary("Task Scheduler", taskName, sc)
-	fmt.Println("  Autostart : on login")
-	fmt.Printf("  Logs      : %s\n", sc.LogPath)
-	fmt.Println("  Uninstall : local-start-page.exe --uninstall")
+	if updating {
+		fmt.Printf("Updated and restarted (Task Scheduler)\n")
+		fmt.Printf("  Binary : %s\n", sc.BinPath)
+		fmt.Printf("  URL    : http://localhost:%d\n", sc.Port)
+	} else {
+		printInstallSummary("Task Scheduler", taskName, sc)
+		fmt.Println("  Autostart : on login")
+		fmt.Printf("  Logs      : %s\n", sc.LogPath)
+		fmt.Println("  Uninstall : local-start-page.exe --uninstall")
+	}
 }
 
 func uninstallWindows() {
