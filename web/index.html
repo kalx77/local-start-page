@@ -36,8 +36,15 @@
   <!-- Group rename modal -->
   <div id="modal-group" class="modal hidden">
     <div class="modal-box">
-      <h3>Rename Group</h3>
+      <h3>Edit Group</h3>
       <label>Name<input id="group-name" type="text"></label>
+      <label>Background color
+        <div style="display:flex;gap:8px;align-items:center">
+          <input id="group-color-picker" type="color" value="#1a1a2e">
+          <input id="group-color-value" type="text" placeholder="#1a1a2e or leave empty">
+          <button id="group-color-clear" class="btn-icon" type="button">clear</button>
+        </div>
+      </label>
       <div class="modal-actions">
         <button id="modal-group-cancel" class="btn-secondary">Cancel</button>
         <button id="modal-group-save" class="btn-primary">Save</button>

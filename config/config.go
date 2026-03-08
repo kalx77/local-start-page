@@ -8,11 +8,13 @@ import (
 
 type Config struct {
 	Background string  `toml:"background" json:"background"`
+	Port       int     `toml:"port"       json:"port"`
 	Groups     []Group `toml:"group"      json:"groups"`
 }
 
 type Group struct {
 	Name  string `toml:"name"  json:"name"`
+	Color string `toml:"color" json:"color"`
 	Links []Link `toml:"link"  json:"links"`
 	X     int    `toml:"x"     json:"x"`
 	Y     int    `toml:"y"     json:"y"`
@@ -26,6 +28,7 @@ type Link struct {
 }
 
 const defaultConfig = `background = "#0f0f1a"
+port = 1221
 
 [[group]]
 name = "Dev"
