@@ -134,7 +134,7 @@ function render() {
 
   state.groups.forEach((group, gi) => {
     const el = document.createElement('div');
-    el.className = 'group';
+    el.className = 'group' + (group.collapsed ? ' group--collapsed' : '');
     el.dataset.gi = gi;
     el.style.gridColumn = `${group.x + 1} / span ${group.w || 1}`;
     el.style.gridRow = group.y + 1;
@@ -144,9 +144,20 @@ function render() {
     const header = document.createElement('div');
     header.className = 'group-header';
     header.addEventListener('mousedown', (e) => {
-      if (e.target.closest('.edit-btns')) return;
+      if (e.target.closest('.edit-btns') || e.target.closest('.btn-collapse')) return;
       if (document.body.classList.contains('editing')) startDrag(gi, e);
     });
+    header.addEventListener('click', (e) => {
+      if (e.target.closest('.edit-btns') || e.target.closest('.btn-collapse')) return;
+      toggleCollapse(gi);
+    });
+
+    const btnCollapse = document.createElement('button');
+    btnCollapse.className = 'btn-collapse';
+    btnCollapse.title = group.collapsed ? 'Expand' : 'Collapse';
+    btnCollapse.textContent = group.collapsed ? '▸' : '▾';
+    btnCollapse.addEventListener('click', (e) => { e.stopPropagation(); toggleCollapse(gi); });
+    header.appendChild(btnCollapse);
 
     const title = document.createElement('span');
     title.className = 'group-title';
@@ -427,6 +438,14 @@ async function deleteGroup(gi) {
 
 async function deleteLink(gi, li) {
   state.groups[gi].links.splice(li, 1);
+  await saveConfig();
+  render();
+}
+
+// ── Collapse ────────────────────────────────────────────────────────────────
+
+async function toggleCollapse(gi) {
+  state.groups[gi].collapsed = !state.groups[gi].collapsed;
   await saveConfig();
   render();
 }

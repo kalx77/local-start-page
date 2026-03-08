@@ -68,7 +68,27 @@ body.editing .resize-handle {
   align-items: center;
   gap: 8px;
   margin-bottom: 12px;
+  cursor: pointer;
+  user-select: none;
 }
+
+.btn-collapse {
+  background: none;
+  border: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0 2px;
+  flex-shrink: 0;
+  transition: color 0.15s;
+}
+
+.btn-collapse:hover { color: var(--text); }
+
+.group--collapsed .group-header { margin-bottom: 0; }
+.group--collapsed .links,
+.group--collapsed .btn-add-link { display: none !important; }
 
 .group-title {
   font-size: 0.75rem;
