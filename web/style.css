@@ -193,11 +193,7 @@ body.editing .link-anchor {
 
 .btn-icon:hover { color: var(--text); border-color: var(--muted); }
 .btn-icon.danger:hover { color: var(--danger); border-color: var(--danger); }
-
-#add-group-row {
-  margin-top: 24px;
-  width: 100%;
-}
+.btn-icon:disabled { opacity: 0.25; cursor: default; pointer-events: none; }
 
 /* Drag */
 .group.dragging { opacity: 0; pointer-events: none; }
@@ -279,6 +275,19 @@ body.editing #btn-edit {
 }
 
 #btn-bg:hover { background: var(--border); }
+
+#btn-add-group {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.875rem;
+  padding: 8px 16px;
+  font-family: var(--font);
+}
+
+#btn-add-group:hover { background: var(--border); }
 
 /* Modals */
 .modal {

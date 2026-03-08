@@ -125,3 +125,64 @@ func TestLoad_MissingFile(t *testing.T) {
 		t.Error("expected error for missing file, got nil")
 	}
 }
+
+func TestSaveAndLoad_LinkOrderPreserved(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+	links := []config.Link{
+		{Name: "First", URL: "https://first.example.com", Icon: ""},
+		{Name: "Second", URL: "https://second.example.com", Icon: "🔗"},
+		{Name: "Third", URL: "https://third.example.com", Icon: ""},
+	}
+	cfg := &config.Config{
+		Groups: []config.Group{{Name: "G", X: 0, Y: 0, W: 1, H: 1, Links: links}},
+	}
+
+	if err := config.Save(path, cfg); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	got, err := config.Load(path)
+	if err != nil {
+		t.Fatalf("Load: %v", err)
+	}
+	if len(got.Groups[0].Links) != 3 {
+		t.Fatalf("links len: got %d, want 3", len(got.Groups[0].Links))
+	}
+	for i, want := range links {
+		if got.Groups[0].Links[i].Name != want.Name {
+			t.Errorf("link[%d] name: got %q, want %q", i, got.Groups[0].Links[i].Name, want.Name)
+		}
+	}
+}
+
+func TestSaveAndLoad_ReorderedLinks(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "config.toml")
+
+	// Save original order A, B, C
+	cfg := &config.Config{
+		Groups: []config.Group{{Name: "G", X: 0, Y: 0, W: 1, H: 1, Links: []config.Link{
+			{Name: "A", URL: "https://a.example.com"},
+			{Name: "B", URL: "https://b.example.com"},
+			{Name: "C", URL: "https://c.example.com"},
+		}}},
+	}
+	if err := config.Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	// Simulate moveLink: swap B and C → order becomes A, C, B
+	cfg.Groups[0].Links[1], cfg.Groups[0].Links[2] = cfg.Groups[0].Links[2], cfg.Groups[0].Links[1]
+	if err := config.Save(path, cfg); err != nil {
+		t.Fatal(err)
+	}
+
+	got, err := config.Load(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := []string{"A", "C", "B"}
+	for i, name := range want {
+		if got.Groups[0].Links[i].Name != name {
+			t.Errorf("link[%d]: got %q, want %q", i, got.Groups[0].Links[i].Name, name)
+		}
+	}
+}
