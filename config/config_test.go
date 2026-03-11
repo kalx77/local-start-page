@@ -5,7 +5,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kuzmin/local-start-page/config"
+	"github.com/kalx77/local-start-page/config"
 )
 
 func TestEnsureExists_Creates(t *testing.T) {
