@@ -1,4 +1,4 @@
-module github.com/kuzmin/local-start-page
+module github.com/kalx77/local-start-page
 
 go 1.22
 

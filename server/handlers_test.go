@@ -9,7 +9,7 @@ import (
 	"testing"
 	"testing/fstest"
 
-	"github.com/kuzmin/local-start-page/config"
+	"github.com/kalx77/local-start-page/config"
 )
 
 // testFS is a minimal in-memory web filesystem.

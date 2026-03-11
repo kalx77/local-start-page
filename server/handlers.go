@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kuzmin/local-start-page/config"
+	"github.com/kalx77/local-start-page/config"
 )
 
 func registerHandlers(mux *http.ServeMux, configPath string, webFS fs.FS) {

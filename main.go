@@ -11,8 +11,8 @@ import (
 	"strings"
 	"syscall"
 
-	"github.com/kuzmin/local-start-page/config"
-	"github.com/kuzmin/local-start-page/server"
+	"github.com/kalx77/local-start-page/config"
+	"github.com/kalx77/local-start-page/server"
 )
 
 //go:embed web
